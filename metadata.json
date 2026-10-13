@@ -1,0 +1,6 @@
+{
+  "name": "RiskPilot: AI Incident Triage & Risk Matrix Suite",
+  "description": "PMBOK-grounded project management copilot for incident triage, automated 5x5 probability & impact matrix scoring, and contingency reserve tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
