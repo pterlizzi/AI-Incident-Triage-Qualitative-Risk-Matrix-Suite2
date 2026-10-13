@@ -279,6 +279,7 @@ export default function App() {
         {activeTab === 'risks' && (
           <RiskRegisterView
             risks={risks}
+            onAddRisk={handleAddRisk}
             onUpdateRisk={handleUpdateRisk}
             onPromoteToIssue={handlePromoteRiskToIssue}
             onOpenTriageModal={() => setIsTriageModalOpen(true)}
@@ -337,8 +338,10 @@ export default function App() {
         risks={risks}
         issues={issues}
         onAddRisk={handleAddRisk}
+        onUpdateRisk={handleUpdateRisk}
         onAddIssue={handleAddIssue}
         onExecuteContingencyDraw={handleExecuteContingencyDraw}
+        onSelectRisk={handleSelectRiskFromMatrix}
       />
 
       <GovernanceReferenceModal

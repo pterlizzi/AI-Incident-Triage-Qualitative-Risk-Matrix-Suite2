@@ -10,7 +10,10 @@ import {
   FileText, 
   DollarSign, 
   Sliders, 
-  RefreshCw 
+  RefreshCw,
+  Ban,
+  ExternalLink,
+  Lock
 } from 'lucide-react';
 import { RiskItem, IssueItem, TriageAssessmentResult, ObjectiveImpacts, RiskLevel } from '../types/project';
 import { calculateMatrixScore, getRiskLevelBadgeClass, formatCurrency } from '../utils/matrixCalculations';
@@ -22,34 +25,40 @@ interface TriageWizardModalProps {
   risks: RiskItem[];
   issues: IssueItem[];
   onAddRisk: (newRisk: RiskItem) => void;
+  onUpdateRisk?: (updatedRisk: RiskItem) => void;
   onAddIssue: (newIssue: IssueItem) => void;
   onExecuteContingencyDraw: (amount: number, description: string, riskId?: string, issueId?: string) => void;
+  onSelectRisk?: (risk: RiskItem) => void;
 }
 
 const PRESET_INCIDENTS = [
   {
-    label: "CRM API Missing Field (Realized)",
+    label: "CRM API Missing Field (Similar to R-01)",
     text: "Vendor call today confirmed that the CRM API does not expose the 'industry vertical' field required for lead routing before go-live.",
   },
   {
-    label: "UX Designer Sick Leave (Realized)",
+    label: "UX Designer Sick Leave (Similar to R-06)",
     text: "Bill (UX designer) has taken unexpected medical leave for 5 business days during the brand design phase.",
   },
   {
-    label: "WCAG Contrast Audit Failure (Realized / Zero-Tol)",
+    label: "WCAG Contrast Audit Failure (Similar to R-02)",
     text: "Accessibility compliance audit surfaced Severity-1 color contrast issues on primary design system components.",
   },
   {
-    label: "Vendor Cutover Maintenance (Realized)",
+    label: "Vendor Cutover Maintenance (Similar to R-07)",
     text: "Hosting provider announced a scheduled server maintenance window on November 22, exactly two days before site Go-Live.",
   },
   {
-    label: "LCP Performance Target (Future Threat)",
+    label: "LCP Performance Target (Similar to R-10)",
     text: "Performance simulation indicates image-heavy consultant directory pages may exceed the target LCP of 2.5 seconds.",
   },
   {
-    label: "Sponsor Requesting Scope Add (Scope Creep)",
+    label: "Sponsor Requesting Scope Add (Similar to R-11)",
     text: "Sponsor Mary is requesting adding a new Press and Media section to the Phase 1 launch deliverable.",
+  },
+  {
+    label: "Unprecedented Hardware Malfunction (Brand New Risk)",
+    text: "A fire at the local power substation threatens the physical team office facility for the upcoming sprint.",
   }
 ];
 
@@ -59,8 +68,10 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
   risks,
   issues,
   onAddRisk,
+  onUpdateRisk,
   onAddIssue,
   onExecuteContingencyDraw,
+  onSelectRisk,
 }) => {
   const [incidentText, setIncidentText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -113,19 +124,35 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
   // Recalculate score live with user overrides
   const liveScoreInfo = calculateMatrixScore(overrideProb, overrideImpacts);
 
+  // Check if matched to any documented risk
+  const matchedRisk = assessment?.matchedRiskId 
+    ? risks.find(r => r.id === assessment.matchedRiskId)
+    : assessment?.similarRiskId 
+    ? risks.find(r => r.id === assessment.similarRiskId)
+    : null;
+
+  const isDuplicateRisk = Boolean(
+    assessment?.isSimilarToExistingRisk || 
+    assessment?.matchedRiskId || 
+    assessment?.allowNewRiskCreation === false ||
+    matchedRisk
+  );
+
   const handleCommitToIssueLog = () => {
     if (!assessment) return;
     const newId = `I-${String(issues.length + 1).padStart(3, '0')}`;
     const newIssue: IssueItem = {
       id: newId,
       type: (assessment.category as any) || 'Technical',
-      description: incidentText,
+      description: matchedRisk ? `[REALIZED ${matchedRisk.id}]: ${incidentText}` : incidentText,
       priority: liveScoreInfo.score >= 13 ? 'High' : liveScoreInfo.score >= 7 ? 'Medium' : 'Low',
       impactOnObjectives: `Schedule: Level ${overrideImpacts.schedule}, Quality: Level ${overrideImpacts.quality}`,
       owner: assessment.recommendedOwner || 'Andrew (PM)',
       status: 'Open',
       resolution: assessment.matchedContingencyPlan || assessment.recommendedActionPlan,
-      comments: `Triaged via AI RiskPilot. Calculated Score: ${liveScoreInfo.score} (${liveScoreInfo.level}).`
+      comments: matchedRisk 
+        ? `Linked to documented risk ${matchedRisk.id}. Calculated Score: ${liveScoreInfo.score} (${liveScoreInfo.level}).`
+        : `Triaged via AI RiskPilot. Calculated Score: ${liveScoreInfo.score} (${liveScoreInfo.level}).`
     };
 
     onAddIssue(newIssue);
@@ -134,6 +161,13 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
 
   const handleCommitToRiskRegister = () => {
     if (!assessment) return;
+
+    // Strict guard: Do NOT allow creating a new risk entry if similar to an existing one
+    if (isDuplicateRisk) {
+      alert(`Cannot create new risk entry: This risk is already documented under ${matchedRisk?.id || assessment.matchedRiskId}. Update or review that existing risk instead.`);
+      return;
+    }
+
     const newId = `R-${String(risks.length + 1).padStart(2, '0')}`;
     const newRisk: RiskItem = {
       id: newId,
@@ -155,15 +189,29 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
     };
 
     onAddRisk(newRisk);
-    setActionDoneMessage(`Added to Risk Register as ${newId}.`);
+    setActionDoneMessage(`Added to Risk Register as new risk ${newId}.`);
+  };
+
+  const handleUpdateExistingRisk = () => {
+    if (!matchedRisk || !onUpdateRisk) return;
+    const updated: RiskItem = {
+      ...matchedRisk,
+      probability: overrideProb,
+      impacts: overrideImpacts,
+      score: liveScoreInfo.score,
+      level: liveScoreInfo.level,
+      comments: `Re-calibrated via AI Studio Triage. Score: ${liveScoreInfo.score} (${liveScoreInfo.level}). ${matchedRisk.comments || ''}`
+    };
+    onUpdateRisk(updated);
+    setActionDoneMessage(`Updated and re-scored existing documented risk ${matchedRisk.id} in place.`);
   };
 
   const handleExecuteContingency = () => {
     if (!assessment) return;
     onExecuteContingencyDraw(
       drawAmount,
-      `Contingency executed for: ${incidentText.slice(0, 60)}...`,
-      assessment.matchedRiskId,
+      `Contingency executed for ${matchedRisk ? matchedRisk.id : 'incident'}: ${incidentText.slice(0, 60)}...`,
+      matchedRisk ? matchedRisk.id : assessment.matchedRiskId,
       undefined
     );
     setActionDoneMessage(`Drew ${formatCurrency(drawAmount)} from PM Contingency Reserve.`);
@@ -180,7 +228,7 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold tracking-tight">AI Incident Triage & Matrix Scoring Studio</h2>
-              <p className="text-xs text-slate-400">Classify Issue vs. Risk · Check Contingency · Calculate 5×5 P×I Matrix</p>
+              <p className="text-xs text-slate-400">Classify Issue vs. Risk · Enforce Duplicate Prevention · Calculate 5×5 P×I Matrix</p>
             </div>
           </div>
           <button 
@@ -287,28 +335,48 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
                 </div>
               </div>
 
-              {/* Matched Contingency Section */}
-              {assessment.matchedRiskId ? (
-                <div className="bg-amber-50/80 border border-amber-300 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider mb-1">
-                    <CheckCircle2 className="w-4 h-4 text-amber-600" />
-                    <span>Already Identified in Risk Management Plan ({assessment.matchedRiskId})</span>
+              {/* DUPLICATE RISK DETECTION BANNER (Mandatory Policy) */}
+              {isDuplicateRisk && matchedRisk && (
+                <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4.5 text-amber-950 shadow-xs">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+                      <Ban className="w-4 h-4 text-amber-600" />
+                      <span>Documented Risk Detected: Matches {matchedRisk.id} · Creation Blocked</span>
+                    </div>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-200/80 font-bold text-amber-900">
+                      Duplicate Entry Prohibited
+                    </span>
                   </div>
-                  <p className="text-xs text-amber-950 font-medium mb-2">
-                    <strong>Documented Risk Statement:</strong> {assessment.matchedRiskStatement}
+
+                  <p className="text-xs text-amber-950 font-medium mb-2 leading-relaxed">
+                    This risk statement is pretty similar to already documented risk <strong>{matchedRisk.id}</strong>: <em>"{matchedRisk.statement}"</em>.
                   </p>
-                  <div className="bg-white p-3 rounded border border-amber-200 text-xs text-slate-800 space-y-1">
-                    <div className="font-semibold text-slate-900">Pre-Agreed Contingency Action Plan:</div>
-                    <pre className="font-sans whitespace-pre-wrap text-slate-700 text-xs">{assessment.matchedContingencyPlan}</pre>
+
+                  <div className="bg-white/90 p-3 rounded-md border border-amber-300 text-xs text-slate-800 space-y-1">
+                    <div className="font-semibold text-slate-900 flex items-center justify-between">
+                      <span>Documented Pre-Agreed Action Plan ({matchedRisk.id}):</span>
+                      <span className="text-[11px] text-slate-500 font-normal">Owner: {matchedRisk.owner}</span>
+                    </div>
+                    <pre className="font-sans whitespace-pre-wrap text-slate-700 text-xs leading-relaxed">{matchedRisk.actionPlan}</pre>
                   </div>
-                  <div className="mt-2 text-xs text-amber-900 font-medium flex items-center justify-between">
-                    <span>{assessment.contingencyImpactAdvice}</span>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="text-amber-900 font-medium">
+                      ⚠️ <strong>Policy rule:</strong> Because the action is already identified in {matchedRisk.id}, you cannot create a duplicate risk entry. You can re-calibrate its score or execute contingency below.
+                    </span>
+                    {onSelectRisk && (
+                      <button
+                        onClick={() => {
+                          onSelectRisk(matchedRisk);
+                          onClose();
+                        }}
+                        className="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>View {matchedRisk.id} in Register</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
-                </div>
-              ) : (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600 flex items-center gap-2">
-                  <span className="font-semibold text-slate-800">New Unidentified Incident:</span>
-                  <span>Not found in baseline Risk Register R-01–R-15. New entry required.</span>
                 </div>
               )}
 
@@ -474,25 +542,60 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
+                    {/* If triaged as an issue (realized problem) */}
                     {assessment.triageType === 'issue' ? (
                       <button
                         onClick={handleCommitToIssueLog}
                         className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <FileText className="w-4 h-4" />
-                        <span>Commit to Issue Log ({issues.length + 1})</span>
+                        <span>
+                          {matchedRisk 
+                            ? `Log Realized Issue (${matchedRisk.id} -> ${issues.length + 1})` 
+                            : `Commit to Issue Log (${issues.length + 1})`}
+                        </span>
                       </button>
                     ) : (
-                      <button
-                        onClick={handleCommitToRiskRegister}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span>Commit to Risk Register ({risks.length + 1})</span>
-                      </button>
+                      /* If triaged as a risk (potential future event) */
+                      <>
+                        {isDuplicateRisk ? (
+                          <>
+                            {/* Disabled block button */}
+                            <button
+                              disabled
+                              title="Creation blocked: pretty similar to an already documented risk"
+                              className="px-4 py-2 bg-slate-200 text-slate-500 rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-not-allowed border border-slate-300"
+                            >
+                              <Lock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>New Risk Blocked (Already in {matchedRisk?.id || assessment.matchedRiskId})</span>
+                            </button>
+
+                            {/* Allowed action: update existing documented risk */}
+                            {matchedRisk && onUpdateRisk && (
+                              <button
+                                onClick={handleUpdateExistingRisk}
+                                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                              >
+                                <RefreshCw className="w-4 h-4 text-amber-400" />
+                                <span>Update Existing Risk ({matchedRisk.id})</span>
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          /* Only allow new risk creation if truly distinct */
+                          <button
+                            onClick={handleCommitToRiskRegister}
+                            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Commit New Risk to Register ({risks.length + 1})</span>
+                          </button>
+                        )}
+                      </>
                     )}
 
-                    {assessment.matchedRiskId && (
+                    {/* Contingency draw option if matched to an existing risk */}
+                    {matchedRisk && (
                       <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
                         <input
                           type="number"
@@ -506,7 +609,7 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
                           className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-md text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                         >
                           <DollarSign className="w-4 h-4" />
-                          <span>Draw Contingency Reserve</span>
+                          <span>Draw Contingency ({matchedRisk.id})</span>
                         </button>
                       </div>
                     )}

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { RiskItem, RiskCategory, RiskLevel, RiskStatus } from '../types/project';
-import { getRiskLevelBadgeClass } from '../utils/matrixCalculations';
-import { Search, Filter, Plus, ChevronDown, ChevronUp, AlertCircle, ArrowRight } from 'lucide-react';
+import { getRiskLevelBadgeClass, findSimilarRisk, calculateMatrixScore } from '../utils/matrixCalculations';
+import { Search, Filter, Plus, ChevronDown, ChevronUp, AlertCircle, ArrowRight, Ban, X, Lock, CheckCircle2 } from 'lucide-react';
 
 interface RiskRegisterViewProps {
   risks: RiskItem[];
+  onAddRisk?: (newRisk: RiskItem) => void;
   onUpdateRisk: (updatedRisk: RiskItem) => void;
   onPromoteToIssue: (risk: RiskItem) => void;
   onOpenTriageModal: () => void;
@@ -13,6 +14,7 @@ interface RiskRegisterViewProps {
 
 export const RiskRegisterView: React.FC<RiskRegisterViewProps> = ({
   risks,
+  onAddRisk,
   onUpdateRisk,
   onPromoteToIssue,
   onOpenTriageModal,
@@ -24,6 +26,18 @@ export const RiskRegisterView: React.FC<RiskRegisterViewProps> = ({
   const [levelFilter, setLevelFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [expandedRiskId, setExpandedRiskId] = useState<string | null>(selectedRiskFromMatrix?.id || null);
+
+  // Manual Add Risk Modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newStatement, setNewStatement] = useState('');
+  const [newCategory, setNewCategory] = useState<RiskCategory>('Technical');
+  const [newOwner, setNewOwner] = useState('Andrew (PM)');
+  const [newProb, setNewProb] = useState(3);
+  const [newImpacts, setNewImpacts] = useState({ scope: 2, quality: 2, schedule: 3, cost: 2 });
+  const [newActionPlan, setNewActionPlan] = useState('');
+
+  // Check similarity in real-time
+  const similarRiskMatch = findSimilarRisk(newStatement, risks);
 
   const filteredRisks = risks.filter(r => {
     const matchesSearch = r.statement.toLowerCase().includes(search.toLowerCase()) ||
@@ -38,6 +52,42 @@ export const RiskRegisterView: React.FC<RiskRegisterViewProps> = ({
   const categories: RiskCategory[] = ['Technical', 'External', 'Organizational', 'Project Mgmt', 'Opportunity'];
   const levels: RiskLevel[] = ['Critical', 'High', 'Medium-High', 'Medium', 'Low', 'Very Low'];
   const statuses: RiskStatus[] = ['Open', 'Mitigating', 'Closed', 'Realized'];
+
+  const handleSaveNewRisk = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (similarRiskMatch) {
+      alert(`Blocked: This risk is already documented as ${similarRiskMatch.id}. Please update or review that risk instead.`);
+      return;
+    }
+
+    if (!onAddRisk || !newStatement.trim()) return;
+
+    const scoreInfo = calculateMatrixScore(newProb, newImpacts);
+    const newId = `R-${String(risks.length + 1).padStart(2, '0')}`;
+    const newRisk: RiskItem = {
+      id: newId,
+      category: newCategory,
+      statement: newStatement,
+      owner: newOwner,
+      probability: newProb,
+      impacts: newImpacts,
+      score: scoreInfo.score,
+      level: scoreInfo.level,
+      strategy: scoreInfo.score >= 13 ? 'Mitigate' : 'Monitor',
+      actionPlan: newActionPlan || "Monitor against agreed schedule milestones.",
+      responsibleParty: newOwner,
+      triggerSymptom: "Checkpoint review variance.",
+      residualP: Math.max(1, newProb - 1),
+      residualScore: Math.round(scoreInfo.score / 2),
+      status: 'Open',
+      comments: `Added manually with duplicate verification check passed.`
+    };
+
+    onAddRisk(newRisk);
+    setIsAddModalOpen(false);
+    setNewStatement('');
+    setNewActionPlan('');
+  };
 
   return (
     <div className="space-y-5">
@@ -84,11 +134,19 @@ export const RiskRegisterView: React.FC<RiskRegisterViewProps> = ({
             </div>
 
             <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-slate-600" />
+              <span>Add Risk</span>
+            </button>
+
+            <button
               onClick={onOpenTriageModal}
-              className="px-3 py-2 text-xs font-semibold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Plus className="w-4 h-4 text-amber-400" />
-              <span>Score Risk</span>
+              <span>AI Triage & Score</span>
             </button>
           </div>
         </div>
@@ -326,6 +384,114 @@ export const RiskRegisterView: React.FC<RiskRegisterViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Manual Add Risk Modal with Live Duplicate Prevention */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+              <span className="text-sm font-bold">Add Custom Risk (with Duplicate Verification)</span>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewRisk} className="p-5 space-y-4 text-xs">
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Risk Statement:</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={newStatement}
+                  onChange={(e) => setNewStatement(e.target.value)}
+                  placeholder="e.g. Hosting provider cutover failure or API vendor missing field..."
+                  className="w-full p-2.5 border border-slate-300 rounded outline-none focus:ring-1 focus:ring-slate-900 text-slate-900"
+                />
+              </div>
+
+              {/* REAL-TIME DUPLICATE WARNING */}
+              {similarRiskMatch && (
+                <div className="bg-amber-50 border-2 border-amber-400 p-3 rounded-md text-amber-950 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <Ban className="w-4 h-4 text-amber-600" />
+                    <span>DUPLICATE RISK DETECTED: Similar to {similarRiskMatch.id}</span>
+                  </div>
+                  <p className="text-[11px] text-amber-900 font-medium">
+                    Matches: <em>"{similarRiskMatch.statement}"</em>
+                  </p>
+                  <p className="text-[11px] text-slate-700">
+                    <strong>Agreed Action Plan already documented:</strong> {similarRiskMatch.actionPlan}
+                  </p>
+                  <div className="pt-1 text-[11px] font-bold text-red-700">
+                    Creation is blocked because the action plan is already identified in {similarRiskMatch.id}.
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Category:</label>
+                  <select
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value as RiskCategory)}
+                    className="w-full p-2 border border-slate-300 rounded bg-white text-slate-900"
+                  >
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Owner:</label>
+                  <input
+                    type="text"
+                    value={newOwner}
+                    onChange={(e) => setNewOwner(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Proposed Action Plan:</label>
+                <textarea
+                  rows={2}
+                  value={newActionPlan}
+                  onChange={(e) => setNewActionPlan(e.target.value)}
+                  placeholder="Describe mitigation plan..."
+                  className="w-full p-2 border border-slate-300 rounded text-slate-900"
+                />
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-3 py-1.5 border border-slate-200 rounded text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                {similarRiskMatch ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="px-4 py-2 bg-slate-200 text-slate-400 font-semibold rounded cursor-not-allowed flex items-center gap-1.5 border border-slate-300"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Creation Blocked (Matches {similarRiskMatch.id})</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-slate-900 text-white font-semibold rounded hover:bg-slate-800 cursor-pointer"
+                  >
+                    Save New Risk ({risks.length + 1})
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

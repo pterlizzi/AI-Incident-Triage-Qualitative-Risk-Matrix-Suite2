@@ -2,7 +2,7 @@ export type RiskCategory = 'Technical' | 'External' | 'Organizational' | 'Projec
 
 export type RiskLevel = 'Critical' | 'High' | 'Medium-High' | 'Medium' | 'Low' | 'Very Low';
 
-export type RiskStrategy = 'Mitigate' | 'Transfer / Mitigate' | 'Accept (active)' | 'Avoid' | 'Avoid (Sponsor-managed)' | 'Enhance' | 'Exploit';
+export type RiskStrategy = 'Mitigate' | 'Transfer / Mitigate' | 'Accept (active)' | 'Avoid' | 'Avoid (Sponsor-managed)' | 'Enhance' | 'Exploit' | 'Monitor';
 
 export type RiskStatus = 'Open' | 'Mitigating' | 'Closed' | 'Realized';
 
@@ -98,4 +98,8 @@ export interface TriageAssessmentResult {
   contingencyImpactAdvice: string;
   estimatedCostImpact?: number;
   stakeholderAlerts: string[];
+  isSimilarToExistingRisk?: boolean;
+  similarRiskId?: string;
+  similarityExplanation?: string;
+  allowNewRiskCreation?: boolean;
 }
