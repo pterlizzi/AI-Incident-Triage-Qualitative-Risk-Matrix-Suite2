@@ -19,6 +19,7 @@ import { IssueLogView } from './components/IssueLogView';
 import { ContingencyTrackerView } from './components/ContingencyTrackerView';
 import { TriageWizardModal } from './components/TriageWizardModal';
 import { GovernanceReferenceModal } from './components/GovernanceReferenceModal';
+import { WelcomeModal } from './components/WelcomeModal';
 import { Sparkles, RotateCcw, AlertTriangle, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export default function App() {
@@ -53,7 +54,24 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'matrix' | 'triage' | 'risks' | 'issues' | 'contingency'>('triage');
   const [isTriageModalOpen, setIsTriageModalOpen] = useState(false);
   const [isGovernanceModalOpen, setIsGovernanceModalOpen] = useState(false);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(() => {
+    try {
+      const welcomed = localStorage.getItem('riskpilot_has_seen_welcome');
+      return welcomed !== 'true';
+    } catch {
+      return true;
+    }
+  });
   const [selectedRiskFromMatrix, setSelectedRiskFromMatrix] = useState<RiskItem | null>(null);
+
+  const handleCloseWelcomeModal = () => {
+    setIsWelcomeModalOpen(false);
+    try {
+      localStorage.setItem('riskpilot_has_seen_welcome', 'true');
+    } catch {
+      // ignore
+    }
+  };
 
   // Sync to localStorage
   useEffect(() => {
@@ -153,6 +171,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         onOpenTriageModal={() => setIsTriageModalOpen(true)}
         onOpenGovernanceModal={() => setIsGovernanceModalOpen(true)}
+        onOpenWelcomeModal={() => setIsWelcomeModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -347,6 +366,13 @@ export default function App() {
       <GovernanceReferenceModal
         isOpen={isGovernanceModalOpen}
         onClose={() => setIsGovernanceModalOpen(false)}
+      />
+
+      <WelcomeModal
+        isOpen={isWelcomeModalOpen}
+        onClose={handleCloseWelcomeModal}
+        onLaunchTriage={() => setIsTriageModalOpen(true)}
+        onExploreMatrix={() => setActiveTab('matrix')}
       />
     </div>
   );

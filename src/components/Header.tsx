@@ -6,6 +6,7 @@ interface HeaderProps {
   setActiveTab: (tab: 'matrix' | 'triage' | 'risks' | 'issues' | 'contingency') => void;
   onOpenTriageModal: () => void;
   onOpenGovernanceModal: () => void;
+  onOpenWelcomeModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -13,6 +14,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onOpenTriageModal,
   onOpenGovernanceModal,
+  onOpenWelcomeModal,
 }) => {
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
@@ -88,11 +90,18 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Zone 3: Primary Action & Governance */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onOpenWelcomeModal}
+              title="Welcome Tour & First-Time User Guide"
+              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium border border-slate-200 cursor-pointer"
+            >
+              <span className="hidden sm:inline">Guide</span>
+            </button>
             <button
               onClick={onOpenGovernanceModal}
               title="View Mary's Consulting PMBOK Risk Management Plan"
-              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium border border-slate-200"
+              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium border border-slate-200 cursor-pointer"
             >
               <BookOpen className="w-4 h-4 text-slate-500" />
               <span className="hidden sm:inline">Governance Plan</span>
