@@ -21,7 +21,7 @@ export const ContingencyTrackerView: React.FC<ContingencyTrackerViewProps> = ({
   const [description, setDescription] = useState('');
   const [selectedRiskId, setSelectedRiskId] = useState<string>('');
   const [selectedIssueId, setSelectedIssueId] = useState<string>('');
-  const [authorizedBy, setAuthorizedBy] = useState('Andrew (PM)');
+  const [authorizedBy, setAuthorizedBy] = useState('Pascual Terlizzi (PM)');
 
   const totalDrawn = contingency.draws.reduce((sum, d) => sum + d.amount, 0);
   const availablePMContingency = contingency.totalBudget - totalDrawn;

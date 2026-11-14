@@ -136,7 +136,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
                 <strong>Inspect the 5×5 Matrix:</strong> Click any coordinate on the visual heatmap to drill down into active project risks and review required SLAs.
               </li>
               <li>
-                <strong>Review Governance Rules:</strong> Click <em>"Governance Plan"</em> in the top navigation to view Mary's Consulting stakeholder tolerances and scoring rubrics.
+                <strong>Review Governance Rules:</strong> Click <em>"Governance Plan"</em> in the top navigation to view New Company Website stakeholder tolerances and scoring rubrics.
               </li>
             </ol>
           </div>

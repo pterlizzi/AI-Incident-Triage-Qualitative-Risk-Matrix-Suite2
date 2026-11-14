@@ -30,7 +30,7 @@ if (apiKey) {
   });
 }
 
-// Fallback heuristic scoring logic based on Mary's Consulting Risk Management Plan
+// Fallback heuristic scoring logic based on New Company Website Risk Management Plan
 function heuristicTriage(description: string, currentRisks: any[] = []) {
   const desc = description.toLowerCase();
   const risksPool = (currentRisks && currentRisks.length > 0) ? currentRisks : INITIAL_RISKS;
@@ -171,7 +171,7 @@ function heuristicTriage(description: string, currentRisks: any[] = []) {
     matchedRiskStatement: matchedRisk ? matchedRisk.statement : undefined,
     matchedContingencyPlan: matchedRisk ? matchedRisk.actionPlan : undefined,
     category: matchedRisk ? matchedRisk.category : (desc.includes('vendor') ? 'External' : (desc.includes('code') || desc.includes('api') ? 'Technical' : 'Organizational')),
-    recommendedOwner: matchedRisk ? matchedRisk.owner : (desc.includes('api') || desc.includes('dev') ? 'Bob (Dev)' : 'Andrew (PM)'),
+    recommendedOwner: matchedRisk ? matchedRisk.owner : (desc.includes('api') || desc.includes('dev') ? 'Bob (Dev)' : 'Pascual Terlizzi (PM)'),
     probability: p,
     probabilityReasoning: isRealized ? "Event has already occurred (Probability = 5 / realized)." : `Assessed at level ${p} based on current project cadence and historical milestones.`,
     impacts: { scope: sc, quality: qu, schedule: sch, cost: co },
@@ -212,7 +212,7 @@ app.post('/api/triage', async (req, res) => {
       return res.json(result);
     }
 
-    const systemPrompt = `You are an expert Project Management Risk & Issue Triage Copilot grounded strictly in the PMBOK 8th-Edition methodology and the documented "Mary's Consulting – New Company Website" Risk Management Plan.
+    const systemPrompt = `You are an expert Project Management Risk & Issue Triage Copilot grounded strictly in the PMBOK 8th-Edition methodology and the documented "New Company Website" Risk Management Plan.
 
 PROJECT CONTEXT & GOVERNANCE:
 - Target Go-Live: November 2026. Total Project Budget Cap: $150,000.
@@ -221,7 +221,7 @@ PROJECT CONTEXT & GOVERNANCE:
 - Sponsor (Mary) Tolerances: Low tolerance for budget overrun (> $150K requires formal approval). Medium tolerance for schedule slip (≤ 2 weeks acceptable). ZERO tolerance for accessibility (WCAG 2.1 AA) or security non-compliance.
 - IT/Hosting Tolerances: Zero tolerance for production stability risks; demands rollback plan for every cutover.
 - Marketing Lead Tolerances: Zero tolerance for content-quality compromises.
-- PM (Andrew) Authority: Authority to accept risks with combined exposure ≤ $5,000 without sponsor approval.
+- PM (Pascual Terlizzi) Authority: Authority to accept risks with combined exposure ≤ $5,000 without sponsor approval.
 
 EVALUATION METHODOLOGY:
 1. CLASSIFICATION:
@@ -229,7 +229,7 @@ EVALUATION METHODOLOGY:
    - "risk": An uncertain event or condition that, IF it occurs, has a positive or negative effect in the future (e.g. "contractor might decline SOW", "LCP speed may exceed 2.5s", "Sponsor may delay approval"). Tracks in RISK REGISTER.
 
 2. CONTINGENCY / PREVIOUS IDENTIFICATION:
-   - Check if this incident matches or is pretty similar to any existing Risk in Mary's Consulting project:
+   - Check if this incident matches or is pretty similar to any existing Risk in New Company Website project:
      - R-01 (CRM API integration complexity / missing fields)
      - R-02 (WCAG 2.1 AA accessibility audit Severity-1 findings)
      - R-03 (Frontend contractor unavailable / SOW)
@@ -274,7 +274,7 @@ EVALUATION METHODOLOGY:
      - Set "isSimilarToExistingRisk": false
      - Set "allowNewRiskCreation": true`;
 
-    const userPrompt = `Evaluate this project incident/event description:\n"${description}"\n\nCross-reference against Mary's Consulting Risk Register and Issue Log. Provide complete structured evaluation. Check if it is similar to any documented risk and enforce duplicate creation blocking if similar.`;
+    const userPrompt = `Evaluate this project incident/event description:\n"${description}"\n\nCross-reference against New Company Website Risk Register and Issue Log. Provide complete structured evaluation. Check if it is similar to any documented risk and enforce duplicate creation blocking if similar.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.8-flash',

@@ -62,7 +62,7 @@ export const GovernanceReferenceModal: React.FC<GovernanceReferenceModalProps> =
               </span>
               <ul className="space-y-1.5 text-slate-600">
                 <li><strong>Sponsor (Mary):</strong> Owns project-level risk acceptance, approves management reserve (&gt;$7.5K).</li>
-                <li><strong>Project Manager (Andrew):</strong> Maintains Risk Register, facilitates analysis, allocates up to $15K contingency.</li>
+                <li><strong>Project Manager (Pascual Terlizzi):</strong> Maintains Risk Register, facilitates analysis, allocates up to $15K contingency.</li>
                 <li><strong>Risk Owners:</strong> Responsible for executing the documented mitigation plan and tracking triggers.</li>
                 <li><strong>Team Members (Bob, Bill, Christine):</strong> Identify domain risks, execute technical mitigations.</li>
               </ul>

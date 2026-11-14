@@ -27,7 +27,15 @@ export default function App() {
   const [risks, setRisks] = useState<RiskItem[]>(() => {
     try {
       const saved = localStorage.getItem('riskpilot_risks');
-      return saved ? JSON.parse(saved) : INITIAL_RISKS;
+      if (saved) {
+        const parsed: RiskItem[] = JSON.parse(saved);
+        return parsed.map(r => ({
+          ...r,
+          owner: r.owner.includes('Andrew') ? r.owner.replace(/Andrew/g, 'Pascual Terlizzi') : r.owner,
+          responsibleParty: r.responsibleParty?.includes('Andrew') ? r.responsibleParty.replace(/Andrew/g, 'Pascual Terlizzi') : r.responsibleParty
+        }));
+      }
+      return INITIAL_RISKS;
     } catch {
       return INITIAL_RISKS;
     }
@@ -36,7 +44,14 @@ export default function App() {
   const [issues, setIssues] = useState<IssueItem[]>(() => {
     try {
       const saved = localStorage.getItem('riskpilot_issues');
-      return saved ? JSON.parse(saved) : INITIAL_ISSUES;
+      if (saved) {
+        const parsed: IssueItem[] = JSON.parse(saved);
+        return parsed.map(i => ({
+          ...i,
+          owner: i.owner.includes('Andrew') ? i.owner.replace(/Andrew/g, 'Pascual Terlizzi') : i.owner
+        }));
+      }
+      return INITIAL_ISSUES;
     } catch {
       return INITIAL_ISSUES;
     }
@@ -45,7 +60,17 @@ export default function App() {
   const [contingency, setContingency] = useState<ContingencyReserve>(() => {
     try {
       const saved = localStorage.getItem('riskpilot_contingency');
-      return saved ? JSON.parse(saved) : INITIAL_CONTINGENCY;
+      if (saved) {
+        const parsed: ContingencyReserve = JSON.parse(saved);
+        return {
+          ...parsed,
+          draws: parsed.draws.map(d => ({
+            ...d,
+            authorizedBy: d.authorizedBy.includes('Andrew') ? d.authorizedBy.replace(/Andrew/g, 'Pascual Terlizzi') : d.authorizedBy
+          }))
+        };
+      }
+      return INITIAL_CONTINGENCY;
     } catch {
       return INITIAL_CONTINGENCY;
     }
@@ -87,7 +112,7 @@ export default function App() {
   }, [contingency]);
 
   const handleResetData = () => {
-    if (window.confirm("Reset all project data back to the Mary's Consulting baseline?")) {
+    if (window.confirm("Reset all project data back to the New Company Website baseline?")) {
       setRisks(INITIAL_RISKS);
       setIssues(INITIAL_ISSUES);
       setContingency(INITIAL_CONTINGENCY);
@@ -149,7 +174,7 @@ export default function App() {
       description,
       riskId,
       issueId,
-      authorizedBy: 'Andrew (PM)',
+      authorizedBy: 'Pascual Terlizzi (PM)',
       sponsorNotified: amount > 5000
     };
     setContingency(prev => ({
@@ -335,7 +360,7 @@ export default function App() {
           <div>
             <span>RiskPilot · PMBOK 8th-Edition Risk & Issues Engine</span>
             <span className="hidden sm:inline-block ml-2 text-slate-400">|</span>
-            <span className="ml-2 font-mono text-[11px] text-slate-400">Mary's Consulting Website Project</span>
+            <span className="ml-2 font-mono text-[11px] text-slate-400">New Company Website</span>
           </div>
           <div className="flex items-center gap-4 text-slate-500">
             <button 

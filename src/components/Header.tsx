@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
                 RiskPilot
               </span>
               <span className="hidden sm:inline-block ml-2 text-xs text-slate-500 font-medium border-l border-slate-200 pl-2">
-                Mary's Consulting · Web Launch
+                New Company Website
               </span>
             </div>
           </div>
@@ -100,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={onOpenGovernanceModal}
-              title="View Mary's Consulting PMBOK Risk Management Plan"
+              title="View New Company Website PMBOK Risk Management Plan"
               className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium border border-slate-200 cursor-pointer"
             >
               <BookOpen className="w-4 h-4 text-slate-500" />

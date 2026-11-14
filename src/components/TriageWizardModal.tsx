@@ -147,7 +147,7 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
       description: matchedRisk ? `[REALIZED ${matchedRisk.id}]: ${incidentText}` : incidentText,
       priority: liveScoreInfo.score >= 13 ? 'High' : liveScoreInfo.score >= 7 ? 'Medium' : 'Low',
       impactOnObjectives: `Schedule: Level ${overrideImpacts.schedule}, Quality: Level ${overrideImpacts.quality}`,
-      owner: assessment.recommendedOwner || 'Andrew (PM)',
+      owner: assessment.recommendedOwner || 'Pascual Terlizzi (PM)',
       status: 'Open',
       resolution: assessment.matchedContingencyPlan || assessment.recommendedActionPlan,
       comments: matchedRisk 
@@ -173,14 +173,14 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
       id: newId,
       category: (assessment.category as any) || 'Technical',
       statement: incidentText,
-      owner: assessment.recommendedOwner || 'Andrew (PM)',
+      owner: assessment.recommendedOwner || 'Pascual Terlizzi (PM)',
       probability: overrideProb,
       impacts: overrideImpacts,
       score: liveScoreInfo.score,
       level: liveScoreInfo.level,
       strategy: (assessment.responseStrategy as any) || 'Mitigate',
       actionPlan: assessment.recommendedActionPlan,
-      responsibleParty: assessment.recommendedOwner || 'Andrew (PM)',
+      responsibleParty: assessment.recommendedOwner || 'Pascual Terlizzi (PM)',
       triggerSymptom: assessment.triggerSymptom || 'Milestone checkpoint variance.',
       residualP: Math.max(1, overrideProb - 1),
       residualScore: Math.round(liveScoreInfo.score / 2),
@@ -243,7 +243,7 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
           {/* Quick Presets */}
           <div>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">
-              Quick Test from Mary's Consulting Project Documents:
+              Quick Test from New Company Website Project Documents:
             </span>
             <div className="flex flex-wrap gap-1.5">
               {PRESET_INCIDENTS.map((preset, idx) => (
@@ -275,7 +275,7 @@ export const TriageWizardModal: React.FC<TriageWizardModalProps> = ({
             />
             <div className="flex justify-between items-center mt-2">
               <span className="text-xs text-slate-400">
-                AI evaluates against Mary's Consulting Risk Plan, RBS categories, and $15K contingency protocols.
+                AI evaluates against New Company Website Risk Plan, RBS categories, and $15K contingency protocols.
               </span>
               <button
                 disabled={!incidentText.trim() || isAnalyzing}
